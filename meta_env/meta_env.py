@@ -10,6 +10,7 @@ from .stack_machine import all_ops, StackMachine
 from .data import create_datasets
 from gym import Env, logger
 from gym import spaces
+from copy import deepcopy
 import numpy as np
 
 class MetaEnv(Env):
@@ -20,6 +21,11 @@ class MetaEnv(Env):
         self.action_space = spaces.Discrete(len(all_ops))
         self.observation_space = spaces.Discrete(len(all_ops))
         self.train_loader, self.val_loader = create_datasets(dataset, batch_size, cuda)
+        self.model = ConvModel()
+
+        if self.cuda:
+            self.model.cuda()
+        self.init_state = self.model.state_dict()
 
     def reset(self):
         self.executor = StackMachine()
@@ -42,15 +48,17 @@ class MetaEnv(Env):
         reward = 0
         self.instrs.append(action)
 
-        ops = [all_ops[x] for x in self.instrs]
-
-        if self.executor(action) is not None:
+        if torch.isnan(self.executor.stack[-1]).any().item():
+            # Early terminate if nan
+            done = True
+            reward -= 1
+            print('Early terminate nan')
+        elif self.executor(action) is not None:
+            ops = [all_ops[x] for x in self.instrs]
             done = True
             train_failed = False      
-            model = ConvModel()
-
-            if self.cuda:
-                model.cuda()
+            model = self.model
+            model.load_state_dict(deepcopy(self.init_state))
 
             optimizer = MetaOptimizer(model.parameters(), self.instrs)
 

@@ -46,3 +46,5 @@ To train a new model:
 ```
 python -m nos.train
 ```
+
+Training is performed using PPO with an LSTM policy.
