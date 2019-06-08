@@ -3,9 +3,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 import argparse
 from torch.distributions import Categorical
-from model import ConvModel
 from . import meta_optimizer
-from .meta_optimizer import all_ops, StackMachine, MetaOptimizer
+from .model import ConvModel
+from .meta_optimizer import MetaOptimizer
+from .stack_machine import all_ops, StackMachine
 from .data import create_datasets
 from gym import Env, logger
 from gym import spaces

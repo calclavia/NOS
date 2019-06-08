@@ -32,11 +32,12 @@ class MetaOptimizer(Optimizer):
                 # State initialization
                 if len(state) == 0:
                     state['executor'] = StackMachine()
-                    state['executor'].init(grad)
+                    state['executor'].init(torch.zeros_like(grad))
                 
                 # Reset stack and override memory slots
                 executor = state['executor']
-                executor.stack = [-grad]
+                executor.stack = [torch.zeros_like(grad)]
+                # Fixed memory slots
                 executor.memory[0] = p.data
                 executor.memory[1] = grad
 
