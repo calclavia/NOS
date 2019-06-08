@@ -30,7 +30,8 @@ class MetaEnv(Env):
     def reset(self):
         self.executor = StackMachine()
         # Initialize dummy variable
-        self.executor.init(torch.tensor(1.0))
+        self.executor.init()
+        self.executor.reset(torch.tensor(0.0), torch.tensor(1.0))
         self.instrs = []
         return 0
 
@@ -57,12 +58,10 @@ class MetaEnv(Env):
             ops = [all_ops[x] for x in self.instrs]
             done = True
             train_failed = False      
-            model = self.model
-            model.load_state_dict(deepcopy(self.init_state))
+            model = deepcopy(self.model)
 
             optimizer = MetaOptimizer(model.parameters(), self.instrs)
 
-            # print('Training meta model')
             num_epochs = 1
             # total_iters = num_epochs * len(self.train_loader)
             for e in range(num_epochs):
