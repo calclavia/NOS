@@ -29,10 +29,7 @@ class MetaEnv(Env):
 
     def get_valid_actions(self):
         """ Get a vector of valid actions """
-        valid_actions = [self.executor.is_legal(action) and not
-            (len(self.instrs) >= 2 and isinstance(all_ops[self.instrs[-1]], (meta_optimizer.PushOp, meta_optimizer.PushConst)) and 
-                            isinstance(all_ops[action], meta_optimizer.PopOp))
-            for action in range(len(all_ops))]
+        valid_actions = [self.executor.is_legal(action) for action in range(len(all_ops))]
         assert True in valid_actions
         return valid_actions
 
