@@ -37,9 +37,10 @@ class BinaryOp(StackOp):
     def __call__(self, machine):
         b = machine.stack.pop()
         a = machine.stack.pop()
-        if a.is_cuda or b.is_cuda:
-            a = a.cuda()
-            b = b.cuda()
+        if a.is_cuda:
+            b = b.to(device=a.device)
+        if b.is_cuda:
+            a = a.to(device=b.device)
         machine.stack.append(self.arg(a, b))
 
 class StackMachine():

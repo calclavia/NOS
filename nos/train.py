@@ -1,7 +1,7 @@
 import gym
 import numpy as np
-
-from stable_baselines.common.vec_env import DummyVecEnv, SubprocVecEnv
+import torch
+from stable_baselines.common.vec_env import SubprocVecEnv
 from stable_baselines import PPO2
 
 import meta_env
@@ -11,14 +11,20 @@ from .policy import CustomLSTMPolicy
 meta_env.register()
 
 if __name__ == "__main__":
-    batch_size = 8
+    batch_size = 10
+    num_envs = 10
+    num_gpus = torch.cuda.device_count()
 
-    env = SubprocVecEnv([lambda: gym.make('MetaEnv-v0', cuda=True) for _ in range(batch_size)], start_method='forkserver')
+    def make_env(index):
+        return lambda: gym.make('MetaEnv-v0', device=torch.device('cuda', index=index % num_gpus))
+    
+    env = SubprocVecEnv([make_env(x) for x in range(num_envs)], start_method='forkserver')
+
     # env.get_valid_actions = lambda: np.array([e.get_valid_actions() for e in env.envs])
     env.get_valid_actions = lambda: np.array(env.env_method('get_valid_actions'))
 
-    model = algo.MaskedPPO(CustomLSTMPolicy, env, verbose=1, n_steps=64,
-        nminibatches=batch_size, learning_rate=1e-5, tensorboard_log="../out/meta_opt/")
+    model = algo.MaskedPPO(CustomLSTMPolicy, env, verbose=1, n_steps=64, ent_coef=0.0015,
+        nminibatches=batch_size, learning_rate=1e-4, tensorboard_log="../out/meta_opt/")
 
     model.learn(total_timesteps=100000, log_interval=10)
     model.save('meta_optimizer')

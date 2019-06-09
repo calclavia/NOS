@@ -14,18 +14,13 @@ from copy import deepcopy
 import numpy as np
 
 class MetaEnv(Env):
-    def __init__(self, dataset='cifar10', batch_size=128, cuda=False):
+    def __init__(self, dataset='cifar10', batch_size=128, device=torch.device('cpu')):
         self.dataset = dataset
-        self.batch_size = batch_size
-        self.cuda = cuda
+        self.device = device
         self.observation_space = spaces.Box(low=-100, high=100, shape=(len(all_ops) + 1,), dtype=np.float32)
         self.action_space = spaces.Discrete(len(all_ops))
-        self.train_loader, self.val_loader = create_datasets(dataset, batch_size, cuda)
+        self.train_loader, self.val_loader = create_datasets(dataset, batch_size)
         self.model = ConvModel()
-
-        if self.cuda:
-            self.model.cuda()
-        self.init_state = self.model.state_dict()
 
     def reset(self):
         self.max_train_iters = 100
@@ -69,7 +64,7 @@ class MetaEnv(Env):
                 ops = [all_ops[x] for x in self.instrs]
                 done = True
                 train_failed = False      
-                model = deepcopy(self.model)
+                model = deepcopy(self.model).to(self.device)
 
                 optimizer = MetaOptimizer(model.parameters(), self.instrs)
 
@@ -80,9 +75,7 @@ class MetaEnv(Env):
                     # Train on training set
                     iterations = 0
                     for x, y in self.train_loader:
-                        if self.cuda:
-                            x, y = x.cuda(), y.cuda()
-
+                        x, y = x.to(self.device), y.to(self.device)
                         y_pred = model(x)
                         loss = F.cross_entropy(y_pred, y)
                         model.zero_grad()
@@ -107,8 +100,7 @@ class MetaEnv(Env):
                         model.eval()
                         accs = []
                         for x, y in self.val_loader:
-                            if self.cuda:
-                                x, y = x.cuda(), y.cuda()
+                            x, y = x.to(self.device), y.to(self.device)
                             y_pred = model(x)
                             accs += (y_pred.argmax(dim=-1) == y).tolist()
                     reward += np.mean(accs)
