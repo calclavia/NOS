@@ -10,27 +10,29 @@ from .policy import CustomLSTMPolicy
 
 meta_env.register()
 
-batch_size = 5
+if __name__ == "__main__":
+    batch_size = 8
 
-env = DummyVecEnv([lambda: gym.make('MetaEnv-v0', cuda=True) for _ in range(batch_size)])  # The algorithms require a vectorized environment to run
-env.get_valid_actions = lambda: np.array([e.get_valid_actions() for e in env.envs])
+    env = SubprocVecEnv([lambda: gym.make('MetaEnv-v0', cuda=True) for _ in range(batch_size)], start_method='forkserver')
+    # env.get_valid_actions = lambda: np.array([e.get_valid_actions() for e in env.envs])
+    env.get_valid_actions = lambda: np.array(env.env_method('get_valid_actions'))
 
-model = algo.MaskedPPO(CustomLSTMPolicy, env, verbose=1,
-    nminibatches=batch_size, learning_rate=1e-5, tensorboard_log="../out/meta_opt/")
+    model = algo.MaskedPPO(CustomLSTMPolicy, env, verbose=1, n_steps=64,
+        nminibatches=batch_size, learning_rate=1e-5, tensorboard_log="../out/meta_opt/")
 
-model.learn(total_timesteps=100000, log_interval=10)
-model.save('meta_optimizer')
+    model.learn(total_timesteps=100000, log_interval=10)
+    model.save('meta_optimizer')
 
-obs = env.reset()
-state = None
-total_rewards = 0
-done = [False for _ in range(env.num_envs)]
+    obs = env.reset()
+    state = None
+    total_rewards = 0
+    done = [False for _ in range(env.num_envs)]
 
-for i in range(1000):
-    action, _states = model.predict(obs, state=state, mask=done)
-    obs, rewards, done, info = env.step(action)
-    total_rewards += rewards
+    for i in range(1000):
+        action, _states = model.predict(obs, state=state, mask=done)
+        obs, rewards, done, info = env.step(action)
+        total_rewards += rewards
 
-    # if done:
-    #     break
-print(total_rewards)
+        # if done:
+        #     break
+    print(total_rewards)

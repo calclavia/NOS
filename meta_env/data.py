@@ -2,7 +2,7 @@ import torch
 from torchvision import datasets, transforms
 
 def create_datasets(dataset, batch_size, cuda):
-    kwargs = {'num_workers': 1, 'pin_memory': True} if cuda else {}
+    kwargs = {'pin_memory': True} if cuda else {}
 
     if dataset == 'mnist':
         train_dset = datasets.MNIST('../data', train=True, download=True,
