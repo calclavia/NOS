@@ -53,7 +53,6 @@ class MetaEnv(Env):
         if is_invalid:
             # Early terminate if nan
             done = True
-            reward -= 1
             res = 0
             print('Early terminate nan')
         else:
