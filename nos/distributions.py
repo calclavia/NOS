@@ -19,5 +19,5 @@ class MaskedCategoricalPDType(distributions.CategoricalProbabilityDistributionTy
         # These are the logits
         # mask contains all legal actions that can be taken
         # pdparam = tf.where(self.mask, pdparam, tf.broadcast_to(tf.constant([-np.inf]), self.mask.shape))
-        pdparam = tf.where(self.mask, pdparam, tf.broadcast_to(tf.constant([-1e8]), self.mask.shape))
+        pdparam = tf.where(self.mask, pdparam, tf.constant(-1e10, shape=self.mask.shape))
         return self.proba_distribution_from_flat(pdparam), pdparam, q_values

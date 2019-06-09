@@ -46,6 +46,8 @@ class MetaEnv(Env):
         return valid_actions
 
     def step(self, action):
+        # override = [2, 29, 0]
+        # action = override[len(self.instrs)] if len(override) > len(self.instrs) else 0
         assert self.action_space.contains(action)
         
         done = False

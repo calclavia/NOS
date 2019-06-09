@@ -1,6 +1,7 @@
 import gym
+import numpy as np
 
-from stable_baselines.common.vec_env import DummyVecEnv
+from stable_baselines.common.vec_env import DummyVecEnv, SubprocVecEnv
 from stable_baselines import PPO2
 
 import meta_env
@@ -9,13 +10,13 @@ from .policy import CustomLSTMPolicy
 
 meta_env.register()
 
-batch_size = 1
+batch_size = 5
 
-env = gym.make('MetaEnv-v0', cuda=True)
-env = DummyVecEnv([lambda: env for _ in range(batch_size)])  # The algorithms require a vectorized environment to run
-env.get_valid_actions = lambda: [e.get_valid_actions() for e in env.envs]
+env = DummyVecEnv([lambda: gym.make('MetaEnv-v0', cuda=True) for _ in range(batch_size)])  # The algorithms require a vectorized environment to run
+env.get_valid_actions = lambda: np.array([e.get_valid_actions() for e in env.envs])
 
-model = algo.MaskedPPO(CustomLSTMPolicy, env, verbose=1, nminibatches=batch_size, tensorboard_log="../out/meta_opt/")
+model = algo.MaskedPPO(CustomLSTMPolicy, env, verbose=1,
+    nminibatches=batch_size, learning_rate=1e-5, tensorboard_log="../out/meta_opt/")
 
 model.learn(total_timesteps=100000, log_interval=10)
 model.save('meta_optimizer')
