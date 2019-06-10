@@ -6,9 +6,10 @@ from torch.distributions import Categorical
 from . import meta_optimizer
 from .model import ConvModel
 
-from .instr_set import stack_instr_set as all_ops
+# from .instr_set import stack_instr_set as all_ops
+from .instr_set import tree_instr_set as all_ops
 from .meta_optimizer import MetaOptimizer
-from .stack_machine import StackMachine
+from .stack_machine import StackMachine, TreeMachine
 
 from .data import create_datasets
 from gym import Env, logger
@@ -27,7 +28,7 @@ class MetaEnv(Env):
 
     def reset(self):
         self.max_train_iters = 100
-        self.executor = StackMachine(all_ops)
+        self.executor = TreeMachine(all_ops)
         # Initialize dummy variable
         self.executor.reset(torch.tensor(0.0), torch.tensor(1.0))
         self.instrs = []
@@ -52,17 +53,18 @@ class MetaEnv(Env):
         self.instrs.append(action)
         is_invalid = torch.isnan(self.executor.stack[-1]).any().item() or torch.isinf(self.executor.stack[-1]).any().item()
 
+        ops = [all_ops[x] for x in self.instrs]
+
         if is_invalid:
             # Early terminate if nan
             done = True
             res = 0
-            print('Early terminate nan')
+            print('Early terminate nan', ops)
         else:
             res = self.executor(action)
             if res is not None:
                 res = res.item()
 
-                ops = [all_ops[x] for x in self.instrs]
                 done = True
                 train_failed = False      
                 model = deepcopy(self.model).to(self.device)

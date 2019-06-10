@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from .instr import *
 
 class StackMachine():
     def __init__(self, instr_set, mem_size=8):
@@ -32,20 +33,53 @@ class StackMachine():
         assert self.can_execute(opcode), op
 
         head = self.stack[-1]
-        try:
-            # Executes the instruction
-            op(self)
-            self.history.append(op)
-        except Exception as e:
-            print('Error executing instruction.', op, self.stack)
-            raise e
+        self.execute(op)
 
         if len(self.stack) == 0:
             # Program ended
             return head
 
         return None
+    
+    def execute(self, instr):
+        try:
+            # Executes the instruction
+            instr(self)
+            self.history.append(instr)
+        except Exception as e:
+            print('Error executing instruction.', instr, self.stack)
+            raise e
 
     def can_execute(self, opcode):
         op = self.instr_set[opcode]
         return op.can_execute(self)
+
+class TreeMachine(StackMachine):
+    """ Based on https://arxiv.org/pdf/1709.07417.pdf """
+    def reset(self, w, g):
+        super().reset(w, g)
+        self.stage = 0
+
+    def execute(self, instr):
+        super().execute(instr)
+
+        if self.stage == 4:
+            # Finish a group
+            super().execute(BinaryOp(NamedF('sub', lambda a, b: a - b)))
+            super().execute(PopOp())
+
+        self.stage = (self.stage + 1) % 5
+
+    def can_execute(self, opcode):
+        if not super().can_execute(opcode):
+            return False
+        op = self.instr_set[opcode]
+
+        if self.stage == 0 or self.stage == 2: 
+            return isinstance(op, (PushOp, PushConst))
+        elif self.stage == 1 or self.stage == 3: 
+            return isinstance(op, UnaryOp)
+        elif self.stage == 4: 
+            return isinstance(op, BinaryOp)
+        else:
+            raise Exception('Invalid stage')

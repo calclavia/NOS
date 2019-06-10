@@ -11,8 +11,8 @@ from .policy import CustomLSTMPolicy
 meta_env.register()
 
 if __name__ == "__main__":
-    batch_size = 10
-    num_envs = 10
+    batch_size = 8
+    num_envs = 8
     num_gpus = torch.cuda.device_count()
 
     def make_env(index):

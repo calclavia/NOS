@@ -18,7 +18,7 @@ stack_instr_set = (
         UnaryOp(NamedF('abs', lambda x: torch.abs(x))),
         UnaryOp(NamedF('cos', lambda x: torch.cos(x))),
         UnaryOp(NamedF('sqrt', lambda x: torch.sqrt(x))),
-        UnaryOp(NamedF('log', lambda x: torch.log(x))),
+        UnaryOp(NamedF('logabs', lambda x: torch.log(torch.abs(x)))),
     ] +
     [
         BinaryOp(NamedF('add', lambda a, b: a + b)),
@@ -31,6 +31,21 @@ stack_instr_set = (
     ]
 )
 
-# tree_instr_set = (
-
-# )    
+tree_instr_set = (
+    [PushOp(i) for i in range(mem_size)] +
+    [PushConst(-1), PushConst(0), PushConst(1), PushConst(2), PushConst(10), PushConst(100), PushConst(0.9), PushConst(0.99)] +
+    [
+        UnaryOp(NamedF('identity', lambda x: x)),
+        UnaryOp(NamedF('sign', lambda x: torch.sign(x))),
+        UnaryOp(NamedF('sqrtabs', lambda x: x.abs().sqrt())),
+        UnaryOp(NamedF('logabs', lambda x: x.abs().log())),
+    ] +
+    [
+        BinaryOp(NamedF('add', lambda a, b: a + b)),
+        BinaryOp(NamedF('sub', lambda a, b: a - b)),
+        BinaryOp(NamedF('mul', lambda a, b: a * b)),
+        BinaryOp(NamedF('div', lambda a, b: a / (b + 1e-8))),
+        BinaryOp(NamedF('exp', lambda a, b: a ** b)),
+        BinaryOp(NamedF('keepleft', lambda a, b: a))
+    ]
+)    
