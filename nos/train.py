@@ -24,7 +24,7 @@ if __name__ == "__main__":
     env.get_valid_actions = lambda: np.array(env.env_method('get_valid_actions'))
 
     model = algo.MaskedPPO(CustomLSTMPolicy, env, verbose=1, n_steps=64,
-        nminibatches=batch_size, learning_rate=1e-4, tensorboard_log="../out/meta_opt/")
+        nminibatches=batch_size, learning_rate=1e-5, tensorboard_log="../out/meta_opt/")
 
     model.learn(total_timesteps=100000, log_interval=10)
     model.save('meta_optimizer')

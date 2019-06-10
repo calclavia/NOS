@@ -5,8 +5,11 @@ import argparse
 from torch.distributions import Categorical
 from . import meta_optimizer
 from .model import ConvModel
+
+from .instr_set import stack_instr_set as all_ops
 from .meta_optimizer import MetaOptimizer
-from .stack_machine import all_ops, StackMachine
+from .stack_machine import StackMachine
+
 from .data import create_datasets
 from gym import Env, logger
 from gym import spaces
@@ -24,9 +27,8 @@ class MetaEnv(Env):
 
     def reset(self):
         self.max_train_iters = 100
-        self.executor = StackMachine()
+        self.executor = StackMachine(all_ops)
         # Initialize dummy variable
-        self.executor.init()
         self.executor.reset(torch.tensor(0.0), torch.tensor(1.0))
         self.instrs = []
 
@@ -36,7 +38,7 @@ class MetaEnv(Env):
 
     def get_valid_actions(self):
         """ Get a vector of valid actions """
-        valid_actions = [self.executor.is_legal(action) for action in range(len(all_ops))]
+        valid_actions = [self.executor.can_execute(action) for action in range(len(all_ops))]
         assert True in valid_actions
         return valid_actions
 
@@ -65,7 +67,7 @@ class MetaEnv(Env):
                 train_failed = False      
                 model = deepcopy(self.model).to(self.device)
 
-                optimizer = MetaOptimizer(model.parameters(), self.instrs)
+                optimizer = MetaOptimizer(model.parameters(), self.executor, self.instrs)
 
                 num_epochs = 1
                 # total_iters = num_epochs * len(self.train_loader)

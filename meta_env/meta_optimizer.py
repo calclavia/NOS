@@ -5,8 +5,8 @@ from torch.optim import Optimizer
 from .stack_machine import StackMachine
 
 class MetaOptimizer(Optimizer):
-    def __init__(self, params, instrs):
-        defaults = dict(instrs=instrs)
+    def __init__(self, params, machine, instrs):
+        defaults = dict(machine=machine, instrs=instrs)
         super().__init__(params, defaults)
 
     def step(self, closure=None):
@@ -31,7 +31,7 @@ class MetaOptimizer(Optimizer):
                 
                 # State initialization
                 if len(state) == 0:
-                    state['executor'] = StackMachine()
+                    state['executor'] = group['machine']
                     state['executor'].init()
                 
                 # Reset stack and override memory slots
