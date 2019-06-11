@@ -27,7 +27,7 @@ class MetaEnv(Env):
         self.model = ConvModel()
 
     def reset(self):
-        self.max_train_iters = 100
+        self.max_no_improve = 100
         self.executor = TreeMachine(all_ops)
         # Initialize dummy variable
         self.executor.reset(torch.tensor(0.0), torch.tensor(1.0))
@@ -44,9 +44,11 @@ class MetaEnv(Env):
         return valid_actions
 
     def step(self, action):
-        # override = [2, 29, 0]
+        # Test examples that should give baseline results.
+        # override = [2, 29, 0]       # Stack instr
+        # override = [1, 12, 8, 12, 18] # Tree instr
         # action = override[len(self.instrs)] if len(override) > len(self.instrs) else 0
-        assert self.action_space.contains(action)
+        # assert self.action_space.contains(action)
         
         done = False
         reward = 0
@@ -63,6 +65,7 @@ class MetaEnv(Env):
         else:
             res = self.executor(action)
             if res is not None:
+                # Train a model
                 res = res.item()
 
                 done = True
@@ -71,6 +74,9 @@ class MetaEnv(Env):
 
                 optimizer = MetaOptimizer(model.parameters(), self.executor, self.instrs)
 
+                best_loss = float('inf')
+                running_loss = None
+                no_improv = 0
                 num_epochs = 1
                 # total_iters = num_epochs * len(self.train_loader)
                 for e in range(num_epochs):
@@ -87,11 +93,27 @@ class MetaEnv(Env):
                             train_failed = True
                             print('Failed train', iterations, loss.item(), ops)
                             break
-                        
+
                         iterations += 1
                         loss.backward()
                         optimizer.step()
-                        if iterations > self.max_train_iters:
+
+                        if running_loss is None:
+                            running_loss = loss.item()
+                        else:
+                            running_loss = 0.9 * running_loss + 0.1 * loss.item()
+
+                        if iterations == 1:
+                            init_loss = loss.item()
+
+                        if running_loss < best_loss:
+                            best_loss = running_loss
+                            no_improv = 0
+                        else:
+                            no_improv += 1
+                        
+                        if no_improv > self.max_no_improve:
+                            print('Break training', iterations, loss.item() / init_loss)
                             break
 
                     if train_failed:

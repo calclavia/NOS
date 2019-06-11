@@ -33,7 +33,7 @@ stack_instr_set = (
 
 tree_instr_set = (
     [PushOp(i) for i in range(mem_size)] +
-    [PushConst(-1), PushConst(0), PushConst(1), PushConst(2), PushConst(10), PushConst(100), PushConst(0.9), PushConst(0.99)] +
+    [PushConst(1), PushConst(2), PushConst(10), PushConst(100)] +
     [
         UnaryOp(NamedF('identity', lambda x: x)),
         UnaryOp(NamedF('sign', lambda x: torch.sign(x))),

@@ -32,8 +32,7 @@ class StackMachine():
         assert len(self.stack) > 0, ('Execute on empty stack', op)
         assert self.can_execute(opcode), op
 
-        head = self.stack[-1]
-        self.execute(op)
+        head = self.execute(op)
 
         if len(self.stack) == 0:
             # Program ended
@@ -42,6 +41,8 @@ class StackMachine():
         return None
     
     def execute(self, instr):
+        head = self.stack[-1]
+
         try:
             # Executes the instruction
             instr(self)
@@ -49,6 +50,7 @@ class StackMachine():
         except Exception as e:
             print('Error executing instruction.', instr, self.stack)
             raise e
+        return head
 
     def can_execute(self, opcode):
         op = self.instr_set[opcode]
@@ -61,14 +63,16 @@ class TreeMachine(StackMachine):
         self.stage = 0
 
     def execute(self, instr):
-        super().execute(instr)
+        head = super().execute(instr)
 
         if self.stage == 4:
             # Finish a group
             super().execute(BinaryOp(NamedF('sub', lambda a, b: a - b)))
+            head = self.stack[-1]
             super().execute(PopOp())
 
         self.stage = (self.stage + 1) % 5
+        return head
 
     def can_execute(self, opcode):
         if not super().can_execute(opcode):
