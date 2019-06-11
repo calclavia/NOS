@@ -38,6 +38,11 @@ See `meta_env/stack_machine.py` for all instructions.
 ## Running
 Python 3.6+ must be installed. To install all project dependencies:
 
+Install dependencies on Ubuntu:
+```
+apt-get install -y libfontconfig1 libxrender1 libsm6 libxext6 cmake libopenmpi-dev python3-dev zlib1g-dev libglib2.0-0
+```
+
 ```
 pip install -r requirements.txt
 ```
