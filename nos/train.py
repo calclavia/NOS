@@ -23,7 +23,7 @@ if __name__ == "__main__":
     # env.get_valid_actions = lambda: np.array([e.get_valid_actions() for e in env.envs])
     env.get_valid_actions = lambda: np.array(env.env_method('get_valid_actions'))
 
-    model = algo.MaskedPPO(CustomLSTMPolicy, env, verbose=1, n_steps=10, ent_coef=0.0015,
+    model = algo.MaskedPPO(CustomLSTMPolicy, env, verbose=1, n_steps=5, ent_coef=0.0015,
         nminibatches=batch_size, learning_rate=1e-5, tensorboard_log="../out/meta_opt/")
 
     model.learn(total_timesteps=100000, log_interval=10)

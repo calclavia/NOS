@@ -26,8 +26,10 @@ class MetaEnv(Env):
         self.train_loader, self.val_loader = create_datasets(dataset, batch_size)
         self.model = ConvModel()
 
+        self.assess_interval = 20
+        self.max_no_improve = 4
+
     def reset(self):
-        self.max_no_improve = 100
         self.executor = TreeMachine(all_ops)
         # Initialize dummy variable
         self.executor.reset(torch.tensor(0.0), torch.tensor(1.0))
@@ -75,14 +77,15 @@ class MetaEnv(Env):
                 optimizer = MetaOptimizer(model.parameters(), self.executor, self.instrs)
 
                 best_loss = float('inf')
-                running_loss = None
+                train_losses = []
                 no_improv = 0
-                num_epochs = 1
+
+                num_epochs = 3
+                iterations = 0
                 # total_iters = num_epochs * len(self.train_loader)
                 for e in range(num_epochs):
                     model.train()
                     # Train on training set
-                    iterations = 0
                     for x, y in self.train_loader:
                         x, y = x.to(self.device), y.to(self.device)
                         y_pred = model(x)
@@ -98,22 +101,20 @@ class MetaEnv(Env):
                         loss.backward()
                         optimizer.step()
 
-                        if running_loss is None:
-                            running_loss = loss.item()
-                        else:
-                            running_loss = 0.9 * running_loss + 0.1 * loss.item()
+                        train_losses.append(loss.item())
 
-                        if iterations == 1:
-                            init_loss = loss.item()
+                        if iterations % self.assess_interval == 0:
+                            avg_loss = np.mean(train_losses[-self.assess_interval:])
 
-                        if running_loss < best_loss:
-                            best_loss = running_loss
-                            no_improv = 0
-                        else:
-                            no_improv += 1
+                            if avg_loss < best_loss:
+                                best_loss = avg_loss
+                                no_improv = 0
+                            else:
+                                no_improv += 1
                         
                         if no_improv > self.max_no_improve:
-                            print('Break training', iterations, loss.item() / init_loss)
+                            print('Break training', iterations,
+                                np.mean(train_losses[-self.assess_interval:]) /  np.mean(train_losses[:self.assess_interval]))
                             break
 
                     if train_failed:
