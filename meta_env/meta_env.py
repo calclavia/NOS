@@ -6,8 +6,8 @@ from torch.distributions import Categorical
 from . import meta_optimizer
 from .model import ConvModel
 
-# from .instr_set import stack_instr_set as all_ops
-from .instr_set import tree_instr_set as all_ops
+from .instr_set import stack_instr_set as all_ops
+# from .instr_set import tree_instr_set as all_ops
 from .meta_optimizer import MetaOptimizer
 from .stack_machine import StackMachine, TreeMachine
 
@@ -28,9 +28,10 @@ class MetaEnv(Env):
 
         self.assess_interval = 20
         self.max_no_improve = 4
+        self.max_instrs = 10
 
     def reset(self):
-        self.executor = TreeMachine(all_ops)
+        self.executor = StackMachine(all_ops)
         # Initialize dummy variable
         self.executor.reset(torch.tensor(0.0), torch.tensor(1.0))
         self.instrs = []
@@ -50,7 +51,8 @@ class MetaEnv(Env):
         # override = [2, 29, 0]       # Stack instr
         # override = [1, 12, 8, 12, 18] # Tree instr
         # action = override[len(self.instrs)] if len(override) > len(self.instrs) else 0
-        # assert self.action_space.contains(action)
+
+        assert self.action_space.contains(action)
         
         done = False
         reward = 0
@@ -59,11 +61,11 @@ class MetaEnv(Env):
 
         ops = [all_ops[x] for x in self.instrs]
 
-        if is_invalid:
+        if is_invalid or len(self.instrs) > self.max_instrs:
             # Early terminate if nan
             done = True
             res = 0
-            print('Early terminate nan', ops)
+            print('Early terminate', ops)
         else:
             res = self.executor(action)
             if res is not None:
@@ -113,8 +115,8 @@ class MetaEnv(Env):
                                 no_improv += 1
                         
                         if no_improv > self.max_no_improve:
-                            print('Break training', iterations,
-                                np.mean(train_losses[-self.assess_interval:]) /  np.mean(train_losses[:self.assess_interval]))
+                            # print('Break training', iterations,
+                            #     np.mean(train_losses[-self.assess_interval:]) /  np.mean(train_losses[:self.assess_interval]))
                             break
 
                     if train_failed:
@@ -131,6 +133,11 @@ class MetaEnv(Env):
                             accs += (y_pred.argmax(dim=-1) == y).tolist()
                     reward += np.mean(accs)
                     print('Validation Acc:', np.mean(accs), ops)
+
+        # Reward shaping
+        if done:
+            # Give points if gradient is used (it has to be used somewhere!)
+            reward += 0.01 if 2 in self.instrs else 0
 
         # Features
         action_features = [a == action for a in range(len(all_ops))]

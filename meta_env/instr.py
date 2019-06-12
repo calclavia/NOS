@@ -46,8 +46,9 @@ class PopOp(Instr):
         machine.stack.pop()
         
     def can_execute(self, machine):
+        # Prevent immediate popping
         # Can only pop after a store operation or when stack size = 1
-        return len(machine.stack) == 1 or (len(machine.history) > 0 and isinstance(machine.history[-1], StoreOp))
+        return len(machine.history) > 1 and (len(machine.stack) == 1 or (len(machine.history) > 0 and isinstance(machine.history[-1], StoreOp)))
 
 class StoreOp(Instr):
     """ Stores memory onto the stack """
