@@ -6,8 +6,8 @@ from torch.distributions import Categorical
 from . import meta_optimizer
 from .model import ConvModel
 
-from .instr_set import stack_instr_set as all_ops
-# from .instr_set import tree_instr_set as all_ops
+# from .instr_set import stack_instr_set as all_ops
+from .instr_set import tree_instr_set as all_ops
 from .meta_optimizer import MetaOptimizer
 from .stack_machine import StackMachine, TreeMachine
 
@@ -31,9 +31,9 @@ class MetaEnv(Env):
         self.max_instrs = 10
 
     def reset(self):
-        self.executor = StackMachine(all_ops)
+        self.executor = TreeMachine(all_ops)
         # Initialize dummy variable
-        self.executor.reset(torch.tensor(0.0), torch.tensor(1.0))
+        self.executor.reset(torch.tensor(0.0), torch.tensor(1.0), torch.tensor(2.0))
         self.instrs = []
 
         action_features = [0 for _ in range(len(all_ops))]
@@ -135,9 +135,9 @@ class MetaEnv(Env):
                     print('Validation Acc:', np.mean(accs), ops)
 
         # Reward shaping
-        if done:
-            # Give points if gradient is used (it has to be used somewhere!)
-            reward += 0.01 if 2 in self.instrs else 0
+        # if done:
+        #     # Give points if gradient is used (it has to be used somewhere!)
+        #     reward += 0.01 if 2 in self.instrs else 0
 
         # Features
         action_features = [a == action for a in range(len(all_ops))]

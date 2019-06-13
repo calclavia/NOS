@@ -17,15 +17,17 @@ class StackMachine():
         # A bitmap of whether memory was touched or not
         self.tainted_memory = [False for _ in range(self.mem_size)]
     
-    def reset(self, w, g):
+    def reset(self, w, g, m):
         """ Reset before one iteration of execution """
         self.stack = [torch.zeros_like(g)]
         self.history = []
         # Fixed memory slots
         self.memory[0] = w
         self.memory[1] = g
+        self.memory[2] = m
         self.tainted_memory[0] = True
         self.tainted_memory[1] = True
+        self.tainted_memory[2] = True
 
     def __call__(self, opcode):
         op = self.instr_set[opcode]
@@ -58,18 +60,26 @@ class StackMachine():
 
 class TreeMachine(StackMachine):
     """ Based on https://arxiv.org/pdf/1709.07417.pdf """
-    def reset(self, w, g):
-        super().reset(w, g)
+    def reset(self, w, g, m):
+        super().reset(w, g, m)
         self.stage = 0
+        self.tree_size = 0
 
     def execute(self, instr):
         head = super().execute(instr)
 
         if self.stage == 4:
-            # Finish a group
-            super().execute(BinaryOp(NamedF('sub', lambda a, b: a - b)))
-            head = self.stack[-1]
-            super().execute(PopOp())
+            if self.tree_size == 1:
+                # Finish computing
+                super().execute(BinaryOp(NamedF('sub', lambda a, b: a - b)))
+                head = self.stack[-1]
+                super().execute(PopOp())
+            else:
+                # Store the computed value
+                super().execute(StoreOp(self.tree_size + 3))
+                head = self.stack[-1]
+                super().execute(PopOp())
+            self.tree_size += 1
 
         self.stage = (self.stage + 1) % 5
         return head

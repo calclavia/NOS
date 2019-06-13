@@ -28,15 +28,22 @@ class MetaOptimizer(Optimizer):
                 
                 state = self.state[p]
                 instrs = group['instrs']
+
+                # Compute momentum
+                if 'momentum_buffer' not in state:
+                    m = state['momentum_buffer'] = torch.clone(grad).detach()
+                else:
+                    m = state['momentum_buffer']
+                    m.mul_(0.9).add_(1 - 0, grad)
                 
-                # State initialization
-                if len(state) == 0:
+                # Grab executor
+                if 'executor' not in state:
                     state['executor'] = group['machine']
                     state['executor'].init()
                 
                 # Reset stack and override memory slots
                 executor = state['executor']
-                executor.reset(p.data, grad)
+                executor.reset(p.data, grad, m)
 
                 for instr in instrs:
                     # Execute instruction
