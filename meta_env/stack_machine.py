@@ -69,7 +69,7 @@ class TreeMachine(StackMachine):
         head = super().execute(instr)
 
         if self.stage == 4:
-            if self.tree_size == 1:
+            if self.tree_size == 3:
                 # Finish computing
                 super().execute(BinaryOp(NamedF('sub', lambda a, b: a - b)))
                 head = self.stack[-1]

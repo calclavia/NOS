@@ -18,12 +18,12 @@ class ConvModel(nn.Module):
             nn.BatchNorm2d(32),
             nn.ReLU(inplace=True),
 
-            torch.nn.AdaptiveAvgPool2d(1)
+            torch.nn.AdaptiveAvgPool2d(4)
         )
-        self.fc_out = nn.Linear(32, 10)
+        self.fc_out = nn.Linear(512, 10)
 
     def forward(self, x):
         x = self.layers(x)
-        x = x.squeeze()
+        x = x.view(x.size(0), -1)
         x = self.fc_out(x)
         return x

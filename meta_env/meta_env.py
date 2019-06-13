@@ -28,7 +28,7 @@ class MetaEnv(Env):
 
         self.assess_interval = 20
         self.max_no_improve = 4
-        self.max_instrs = 10
+        self.max_instrs = 20
 
     def reset(self):
         self.executor = TreeMachine(all_ops)
