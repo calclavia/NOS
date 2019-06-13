@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from .instr import *
 
 class StackMachine():
-    def __init__(self, instr_set, mem_size=8):
+    def __init__(self, instr_set, mem_size=9):
         self.instr_set = instr_set
         self.mem_size = mem_size
         self.init()
@@ -17,17 +17,20 @@ class StackMachine():
         # A bitmap of whether memory was touched or not
         self.tainted_memory = [False for _ in range(self.mem_size)]
     
-    def reset(self, w, g, m):
+    def reset(self, w, g, m, v):
         """ Reset before one iteration of execution """
         self.stack = [torch.zeros_like(g)]
         self.history = []
         # Fixed memory slots
         self.memory[0] = w
         self.memory[1] = g
-        self.memory[2] = m
-        self.tainted_memory[0] = True
-        self.tainted_memory[1] = True
-        self.tainted_memory[2] = True
+        self.memory[2] = g ** 2
+        self.memory[3] = m
+        self.memory[4] = v
+        self.init_mem_size = 5
+
+        for i in range(self.init_mem_size):
+            self.tainted_memory[i] = True
 
     def __call__(self, opcode):
         op = self.instr_set[opcode]
@@ -60,8 +63,8 @@ class StackMachine():
 
 class TreeMachine(StackMachine):
     """ Based on https://arxiv.org/pdf/1709.07417.pdf """
-    def reset(self, w, g, m):
-        super().reset(w, g, m)
+    def reset(self, w, g, m, v):
+        super().reset(w, g, m, v)
         self.stage = 0
         self.tree_size = 0
 
@@ -76,7 +79,7 @@ class TreeMachine(StackMachine):
                 super().execute(PopOp())
             else:
                 # Store the computed value
-                super().execute(StoreOp(self.tree_size + 3))
+                super().execute(StoreOp(self.tree_size + self.init_mem_size))
                 head = self.stack[-1]
                 super().execute(PopOp())
             self.tree_size += 1

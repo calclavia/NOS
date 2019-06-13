@@ -33,7 +33,7 @@ class MetaEnv(Env):
     def reset(self):
         self.executor = TreeMachine(all_ops)
         # Initialize dummy variable
-        self.executor.reset(torch.tensor(0.0), torch.tensor(1.0), torch.tensor(2.0))
+        self.executor.reset(torch.tensor(0.0), torch.tensor(0.1), torch.tensor(0.2), torch.tensor(0.3))
         self.instrs = []
 
         action_features = [0 for _ in range(len(all_ops))]

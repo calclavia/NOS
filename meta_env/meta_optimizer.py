@@ -30,11 +30,19 @@ class MetaOptimizer(Optimizer):
                 instrs = group['instrs']
 
                 # Compute momentum
-                if 'momentum_buffer' not in state:
-                    m = state['momentum_buffer'] = torch.clone(grad).detach()
+                if 'm_buffer' not in state:
+                    m = state['m_buffer'] = torch.clone(grad).detach()
                 else:
-                    m = state['momentum_buffer']
-                    m.mul_(0.9).add_(1 - 0, grad)
+                    m = state['m_buffer']
+                    beta1 = 0.9
+                    m.mul_(beta1).add_(1 - beta1, grad)
+
+                if 'v_buffer' not in state:
+                    v = state['v_buffer'] = torch.zeros_like(p.data)
+                else:
+                    v = state['v_buffer']
+                    beta2 = 0.999
+                    v.mul_(beta2).addcmul_(1 - beta2, grad, grad)
                 
                 # Grab executor
                 if 'executor' not in state:
@@ -43,7 +51,7 @@ class MetaOptimizer(Optimizer):
                 
                 # Reset stack and override memory slots
                 executor = state['executor']
-                executor.reset(p.data, grad, m)
+                executor.reset(p.data, grad, m, v)
 
                 for instr in instrs:
                     # Execute instruction

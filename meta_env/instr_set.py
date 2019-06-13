@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from .instr import *
 
 # The amount of variable to store in memory
-mem_size = 8
+mem_size = 9
 
 const_ops = [PushConst(1), PushConst(2), PushConst(10), PushConst(100)]
 
